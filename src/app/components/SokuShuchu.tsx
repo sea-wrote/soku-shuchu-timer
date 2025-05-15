@@ -1,0 +1,359 @@
+"use client"
+
+import { useState, useEffect, useRef } from 'react';
+import { Bell } from 'lucide-react';
+
+// インターフェースを定義
+type SokuShuchuProps = object
+
+const SokuShuchu: React.FC<SokuShuchuProps> = () => {
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [minutes, setMinutes] = useState<number>(0);
+  const [seconds, setSeconds] = useState<number>(0);
+  const [cycles, setCycles] = useState<number>(0);
+  const [showCycles, setShowCycles] = useState<boolean>(true);
+  const [timerInterval, setTimerInterval] = useState<number>(12);
+  const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
+  const [showElapsedTime, setShowElapsedTime] = useState<boolean>(true);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [alarmPlaying, setAlarmPlaying] = useState<boolean>(false);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastCycleTimeRef = useRef<number>(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio for alarm
+  useEffect(() => {
+    audioRef.current = new Audio("data:audio/wav;base64,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");
+  }, []);
+
+  // Main timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (isRunning) {
+      interval = setInterval(() => {
+        setSeconds((prevSeconds: number) => {
+          const newSeconds = prevSeconds + 1;
+          
+          if (newSeconds === 60) {
+            setMinutes((prevMinutes: number) => {
+              const newMinutes = prevMinutes + 1;
+              
+              // Check if we've completed a 12-minute cycle
+              if (newMinutes % 12 === 0 && newMinutes !== 0) {
+                setCycles((prevCycles: number) => {
+                  const newCycles = prevCycles + 1;
+                  lastCycleTimeRef.current = newCycles;
+                  
+                  // Check if timer alarm should sound
+                  if (timerEnabled && newCycles % timerInterval === 0) {
+                    playAlarm();
+                  }
+                  
+                  return newCycles;
+                });
+              }
+              
+              return newMinutes;
+            });
+            return 0;
+          }
+          
+          return newSeconds;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, timerEnabled, timerInterval]);
+
+  // Clock drawing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const width = canvas.width;
+    const height = canvas.height;
+    const radius = Math.min(width, height) / 2 * 0.9;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw clock face
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#f0f9ff';
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+    
+    // Draw hour marks
+    ctx.font = radius * 0.15 + 'px arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    for (let num = 1; num <= 12; num++) {
+      const angle = (num * Math.PI / 6) - (Math.PI / 2);
+      const x = centerX + radius * 0.85 * Math.cos(angle);
+      const y = centerY + radius * 0.85 * Math.sin(angle);
+      ctx.fillStyle = '#000';
+      ctx.fillText(num.toString(), x, y);
+    }
+    
+    // Remove the elapsed time drawing from inside the clock
+    // (We'll display it outside the clock now)
+    
+    // Draw timer info if enabled
+    if (timerEnabled) {
+      ctx.font = radius * 0.08 + 'px arial';
+      ctx.fillStyle = '#000';
+      ctx.fillText(`${timerInterval}min`, centerX, centerY);
+      ctx.fillText('sauna timer', centerX, centerY + radius * 0.15);
+    }
+    
+    // Calculate angle for minutes and seconds
+    const minuteAngle = ((minutes % 12) * 30 + seconds / 2) * Math.PI / 180;
+    const secondAngle = (seconds * 6) * Math.PI / 180;
+    
+    // Draw minute hand
+    ctx.beginPath();
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#e11d48';
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(
+      centerX + radius * 0.7 * Math.sin(minuteAngle),
+      centerY - radius * 0.7 * Math.cos(minuteAngle)
+    );
+    ctx.stroke();
+    
+    // Draw second hand (simplified, without the water drop at the tip)
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#0ea5e9';
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(
+      centerX + radius * 0.6 * Math.sin(secondAngle),
+      centerY - radius * 0.6 * Math.cos(secondAngle)
+    );
+    ctx.stroke();
+    
+    // Draw center dot
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+  }, [seconds, minutes, cycles, timerEnabled, timerInterval]);
+  
+  const playAlarm = (): void => {
+    if (audioRef.current) {
+      setAlarmPlaying(true);
+      audioRef.current.play();
+      
+      audioRef.current.onended = () => {
+        setAlarmPlaying(false);
+      };
+    }
+  };
+
+  const stopAlarm = (): void => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setAlarmPlaying(false);
+    }
+  };
+
+  const toggleTimer = (): void => {
+    setIsRunning(!isRunning);
+  };
+
+  const resetCycles = (): void => {
+    setCycles(0);
+    lastCycleTimeRef.current = 0;
+  };
+  
+  const resetClock = (): void => {
+    setMinutes(0);
+    setSeconds(0);
+  };
+
+  const toggleSettings = (): void => {
+    setShowSettings(!showSettings);
+  };
+
+  const formatTime = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    return `${hours > 0 ? `${hours}h ` : ''}${mins}m`;
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-sky-50 p-4">
+      <div className="text-center mb-4">
+        <h1 className="text-3xl font-bold text-gray-800">即集中時計</h1>
+        <p className="text-gray-600">集中のための12分計</p>
+      </div>
+      
+      <div className="relative mb-4">
+        <canvas 
+          ref={canvasRef} 
+          width={300} 
+          height={300} 
+          className="border-4 border-gray-300 rounded-full shadow-lg"
+        />
+        
+        {alarmPlaying && (
+          <button 
+            onClick={stopAlarm}
+            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-md flex items-center justify-center"
+          >
+            <Bell size={20} />
+          </button>
+        )}
+      </div>
+      
+      {showElapsedTime && (
+        <div className="mb-4 text-center">
+          <p className="text-gray-600 text-sm">経過時間</p>
+          <p className="text-4xl font-bold font-mono text-gray-800">
+            {String(Math.floor(minutes)).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+          </p>
+        </div>
+      )}
+      
+      <div className="flex flex-col items-center mt-4 w-full max-w-xs">
+        <button
+          onClick={toggleTimer}
+          className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 ${
+            isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+          }`}
+        >
+          {isRunning ? '一時停止' : 'スタート'}
+        </button>
+        
+        {showCycles && (
+          <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4 flex justify-between items-center">
+            <div>
+              <p className="text-gray-600">完了した周回数:</p>
+              <p className="text-2xl font-bold">{cycles} 周 ({formatTime(cycles * 12)})</p>
+            </div>
+            <button
+              onClick={resetCycles}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
+            >
+              リセット
+            </button>
+          </div>
+        )}
+        
+        <div className="flex justify-between w-full mb-4">
+          <button
+            onClick={resetClock}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
+          >
+            針を12に戻す
+          </button>
+        </div>
+        
+        <button
+          onClick={toggleSettings}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md"
+        >
+          {showSettings ? '設定を閉じる' : '設定を開く'}
+        </button>
+        
+        {showSettings && (
+          <div className="bg-white rounded-lg shadow-md p-4 w-full mt-4">
+            <div className="mb-4">
+              <label className="flex items-center justify-between">
+                <span className="text-gray-700">経過時間を表示:</span>
+                <div 
+                  onClick={() => setShowElapsedTime(!showElapsedTime)}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
+                    showElapsedTime ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
+                      showElapsedTime ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+            
+            <div className="mb-4">
+              <label className="flex items-center justify-between">
+                <span className="text-gray-700">周回数を表示:</span>
+                <div 
+                  onClick={() => setShowCycles(!showCycles)}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
+                    showCycles ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
+                      showCycles ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+            
+            <div className="mb-4">
+              <label className="flex items-center justify-between">
+                <span className="text-gray-700">タイマーを有効化:</span>
+                <div 
+                  onClick={() => setTimerEnabled(!timerEnabled)}
+                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
+                    timerEnabled ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
+                      timerEnabled ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+            
+            {timerEnabled && (
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">
+                  タイマー間隔: {timerInterval} 分
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="60"
+                  value={timerInterval}
+                  onChange={(e) => setTimerInterval(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            )}
+            
+            <div className="text-xs text-gray-500 mt-4">
+              <p>※ アプリを閉じると計測は停止します</p>
+              <p>※ タイマーは設定した分数が経過すると音が鳴ります</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SokuShuchu;
