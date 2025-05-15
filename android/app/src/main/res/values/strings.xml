@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">即集中時計</string>
+    <string name="title_activity_main">即集中時計</string>
+    <string name="package_name">com.yourcompany.sokushuchu</string>
+    <string name="custom_url_scheme">com.yourcompany.sokushuchu</string>
+</resources>
