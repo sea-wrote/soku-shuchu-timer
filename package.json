@@ -2,12 +2,15 @@
   "name": "soku-shuchu-timer",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+"scripts": {
+  "dev": "next dev --turbopack",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "cap:sync": "npx cap sync",
+  "ios": "npx cap open ios",
+  "android": "npx cap open android"
+},
   "dependencies": {
   "@capacitor/android": "^7.2.0",
   "@capacitor/cli": "^7.2.0",
