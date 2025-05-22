@@ -111,14 +111,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     
     // Remove the elapsed time drawing from inside the clock
     // (We'll display it outside the clock now)
-    
-    // Draw timer info if enabled
-    if (timerEnabled) {
-      ctx.font = radius * 0.08 + 'px arial';
-      ctx.fillStyle = '#000';
-      ctx.fillText(`${timerInterval}min`, centerX, centerY);
-      ctx.fillText('sauna timer', centerX, centerY + radius * 0.15);
-    }
+  
     
     // Calculate angle for minutes and seconds
     const minuteAngle = ((minutes % 12) * 30 + seconds / 2) * Math.PI / 180;
