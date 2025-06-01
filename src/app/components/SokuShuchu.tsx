@@ -121,23 +121,23 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     ctx.beginPath();
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#e11d48';
+    ctx.strokeStyle = 'blue'; // 分針の色を青に変更
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.7 * Math.sin(minuteAngle),
-      centerY - radius * 0.7 * Math.cos(minuteAngle)
+      centerX + radius * 0.8 * Math.sin(minuteAngle), // 分針の長さを変更
+      centerY - radius * 0.8 * Math.cos(minuteAngle)  // 分針の長さを変更
     );
     ctx.stroke();
     
     // Draw second hand (simplified, without the water drop at the tip)
     ctx.beginPath();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 5; // 秒針の太さを分針に合わせる
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#0ea5e9';
+    ctx.strokeStyle = '#e11d48';
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.6 * Math.sin(secondAngle),
-      centerY - radius * 0.6 * Math.cos(secondAngle)
+      centerX + radius * 0.5 * Math.sin(secondAngle), // 秒針の長さを変更
+      centerY - radius * 0.5 * Math.cos(secondAngle)  // 秒針の長さを変更
     );
     ctx.stroke();
     
