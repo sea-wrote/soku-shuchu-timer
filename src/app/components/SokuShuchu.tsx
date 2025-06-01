@@ -8,6 +8,7 @@ type SokuShuchuProps = object
 
 const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [hasStarted, setHasStarted] = useState<boolean>(false); // タイマーが一度でも開始されたか
   // minutes/seconds は実際に経過した時間（0からスタート）
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
@@ -41,8 +42,8 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
           if (newActualSeconds === 60) {
             setMinutes((prevActualMinutes: number) => {
               const newActualMinutes = prevActualMinutes + 1;
-              // 周回数カウント
-              if (newActualMinutes % 12 === 0 && newActualMinutes !== 0) {
+              // 周回数カウント (1分ごとにカウントアップ)
+              if (newActualMinutes !== 0) { // 最初の0分時はカウントしない
                 setCycles((prevCycles: number) => prevCycles + 1);
               }
               // アラームロジック: timerInterval に基づいて鳴らす
@@ -119,8 +120,8 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     ctx.strokeStyle = 'blue'; // 分針の色を青に変更
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.7 * Math.sin(minuteAngle), // 分針の長さを変更
-      centerY - radius * 0.7 * Math.cos(minuteAngle)  // 分針の長さを変更
+      centerX + radius * 0.6 * Math.sin(minuteAngle), // 分針の長さを変更
+      centerY - radius * 0.6 * Math.cos(minuteAngle)  // 分針の長さを変更
     );
     ctx.stroke();
     
@@ -162,37 +163,42 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     }
   };
 
-  const toggleTimer = (): void => {
-    if (!isRunning) {
-      // タイマー開始時
-      setMinutes(0);
-      setSeconds(0);
-      setCycles(0); // cycles をリセット
-      randomOffsetMinutesRef.current = 0; // 12時からスタート
-      randomOffsetSecondsRef.current = 0;
-    }
+  const toggleTimer = (): void => { // 「一時停止」「再開」のトグル専用にする
     setIsRunning(!isRunning);
   };
-  
-  const resetClock = (): void => { // 「針を12に戻す」
+
+  const handleStart = () => {
     setMinutes(0);
     setSeconds(0);
-    setCycles(0); // cycles をリセット
+    setCycles(0);
     randomOffsetMinutesRef.current = 0;
     randomOffsetSecondsRef.current = 0;
-    if (isRunning) {
-      setIsRunning(false); // タイマーも停止
-    }
+    setHasStarted(true);
+    setIsRunning(true);
+  };
+
+  const handleRandomStart = () => {
+    setMinutes(0);
+    setSeconds(0);
+    setCycles(0);
+    randomOffsetMinutesRef.current = Math.floor(Math.random() * 12);
+    randomOffsetSecondsRef.current = Math.floor(Math.random() * 60);
+    setHasStarted(true);
+    setIsRunning(true);
+  };
+  
+  const resetClock = (): void => { // 「リセット」ボタンの機能
+    setMinutes(0);
+    setSeconds(0);
+    setCycles(0);
+    randomOffsetMinutesRef.current = 0;
+    randomOffsetSecondsRef.current = 0;
+    setIsRunning(false);
+    setHasStarted(false); // 未開始状態に戻す
   };
 
   const toggleSettings = (): void => {
     setShowSettings(!showSettings);
-  };
-
-  const formatTime = (totalMinutes: number): string => {
-    const hours = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-    return `${hours > 0 ? `${hours}h ` : ''}${mins}m`;
   };
 
   return (
@@ -230,21 +236,43 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
       )}
       
       <div className="flex flex-col items-center mt-4 w-full max-w-xs">
-        <button
-          onClick={toggleTimer}
-          className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 ${
-            isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-          }`}
-        >
-          {isRunning ? '一時停止' : 'スタート'}
-        </button>
+        {isRunning ? (
+          <button
+            onClick={toggleTimer}
+            className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 bg-red-500 hover:bg-red-600`}
+          >
+            一時停止
+          </button>
+        ) : hasStarted ? (
+          <button
+            onClick={toggleTimer} // isRunningがfalseでhasStartedがtrueなら「再開」
+            className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 bg-blue-500 hover:bg-blue-600`}
+          >
+            再開
+          </button>
+        ) : (
+          <div className="flex w-full space-x-2 mb-4">
+            <button
+              onClick={handleStart}
+              className={`flex-1 py-3 px-4 rounded-lg text-white font-bold shadow-md bg-green-500 hover:bg-green-600`}
+            >
+              スタート
+            </button>
+            <button
+              onClick={handleRandomStart}
+              className="flex-1 py-3 px-4 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold shadow-md"
+            >
+              ランダム
+            </button>
+          </div>
+        )}
         
         {showCycles && (
           <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4 text-center">
             <div>
               <p className="text-gray-600">完了した周回数:</p>
               <p className="text-2xl font-bold">
-                {cycles} 周 ({formatTime(cycles * 12)})
+                {cycles} 周目
               </p>
             </div>
           </div>
@@ -253,36 +281,15 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         <div className="flex justify-between w-full mb-4">
           <button
             onClick={resetClock}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
+            className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
           >
-            針を12に戻す
-          </button>
-        </div>
-
-        <div className="flex justify-between w-full mb-4">
-          <button
-            onClick={() => {
-              // 実際の経過時間をリセット
-              setMinutes(0);
-              setSeconds(0);
-              setCycles(0); // cycles をリセット
-              // 針の初期位置をランダムに設定
-              randomOffsetMinutesRef.current = Math.floor(Math.random() * 12); // 0-11
-              randomOffsetSecondsRef.current = Math.floor(Math.random() * 60); // 0-59
-              
-              if (!isRunning) {
-                setIsRunning(true); // タイマーが止まっていれば開始
-              }
-            }}
-            className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
-          >
-            ランダムに開始する
+            リセット
           </button>
         </div>
         
         <button
           onClick={toggleSettings}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md"
+          className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg shadow-md"
         >
           {showSettings ? '設定を閉じる' : '設定を開く'}
         </button>
