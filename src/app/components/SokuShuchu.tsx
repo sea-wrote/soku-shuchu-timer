@@ -124,8 +124,8 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     ctx.strokeStyle = 'blue'; // 分針の色を青に変更
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.5 * Math.sin(minuteAngle), // 分針の長さを変更
-      centerY - radius * 0.5 * Math.cos(minuteAngle)  // 分針の長さを変更
+      centerX + radius * 0.7 * Math.sin(minuteAngle), // 分針の長さを変更
+      centerY - radius * 0.7 * Math.cos(minuteAngle)  // 分針の長さを変更
     );
     ctx.stroke();
     
