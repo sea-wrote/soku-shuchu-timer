@@ -8,10 +8,11 @@ type SokuShuchuProps = object
 
 const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  // minutes/seconds は実際に経過した時間（0からスタート）
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
   const [cycles, setCycles] = useState<number>(0);
-  const [showCycles, setShowCycles] = useState<boolean>(true);
+  const [showCycles, setShowCycles] = useState<boolean>(true); // 「周回数を表示」のトグル
   const [timerInterval, setTimerInterval] = useState<number>(12);
   const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
   const [showElapsedTime, setShowElapsedTime] = useState<boolean>(true);
@@ -19,8 +20,9 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const [alarmPlaying, setAlarmPlaying] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const lastCycleTimeRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const randomOffsetMinutesRef = useRef<number>(0);
+  const randomOffsetSecondsRef = useRef<number>(0);
 
   // Initialize audio for alarm
   useEffect(() => {
@@ -33,42 +35,34 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     
     if (isRunning) {
       interval = setInterval(() => {
-        setSeconds((prevSeconds: number) => {
-          const newSeconds = prevSeconds + 1;
-          
-          if (newSeconds === 60) {
-            setMinutes((prevMinutes: number) => {
-              const newMinutes = prevMinutes + 1;
-              
-              // Check if we've completed a 12-minute cycle
-              if (newMinutes % 12 === 0 && newMinutes !== 0) {
-                setCycles((prevCycles: number) => {
-                  const newCycles = prevCycles + 1;
-                  lastCycleTimeRef.current = newCycles;
-                  
-                  // Check if timer alarm should sound
-                  if (timerEnabled && newCycles % timerInterval === 0) {
-                    playAlarm();
-                  }
-                  
-                  return newCycles;
-                });
+        // 実際の経過時間 (minutes, seconds) を更新
+        setSeconds((prevActualSeconds: number) => {
+          const newActualSeconds = prevActualSeconds + 1;
+          if (newActualSeconds === 60) {
+            setMinutes((prevActualMinutes: number) => {
+              const newActualMinutes = prevActualMinutes + 1;
+              // 周回数カウント
+              if (newActualMinutes % 12 === 0 && newActualMinutes !== 0) {
+                setCycles((prevCycles: number) => prevCycles + 1);
               }
-              
-              return newMinutes;
+              // アラームロジック: timerInterval に基づいて鳴らす
+              if (timerEnabled && newActualMinutes !== 0 && newActualMinutes % timerInterval === 0) {
+                playAlarm();
+              }
+              return newActualMinutes;
             });
-            return 0;
+            return 0; // Reset actualSeconds to 0
           }
-          
-          return newSeconds;
+          return newActualSeconds;
         });
+        // sessionMinutes/Seconds の更新は不要になったので削除
       }, 1000);
     }
     
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, timerEnabled, timerInterval]);
+  }, [isRunning, timerEnabled, timerInterval, minutes]); // minutes を依存配列に追加（cycles更新のため）
 
   // Clock drawing
   useEffect(() => {
@@ -109,13 +103,14 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
       ctx.fillText(num.toString(), x, y);
     }
     
-    // Remove the elapsed time drawing from inside the clock
-    // (We'll display it outside the clock now)
-  
-    
-    // Calculate angle for minutes and seconds
-    const minuteAngle = ((minutes % 12) * 30 + seconds / 2) * Math.PI / 180;
-    const secondAngle = (seconds * 6) * Math.PI / 180;
+    // Calculate display time including offset
+    const currentDisplaySeconds = (randomOffsetSecondsRef.current + seconds) % 60;
+    const carryOverMinutes = Math.floor((randomOffsetSecondsRef.current + seconds) / 60);
+    const currentDisplayMinutes = (randomOffsetMinutesRef.current + minutes + carryOverMinutes) % 60;
+
+    // Calculate angle for minutes and seconds based on display time
+    const minuteAngle = ((currentDisplayMinutes % 12) * 30 + currentDisplaySeconds / 2) * Math.PI / 180;
+    const secondAngle = (currentDisplaySeconds * 6) * Math.PI / 180;
     
     // Draw minute hand
     ctx.beginPath();
@@ -146,7 +141,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
     ctx.fillStyle = '#000';
     ctx.fill();
-  }, [seconds, minutes, cycles, timerEnabled, timerInterval]);
+  }, [seconds, minutes, timerEnabled, timerInterval]); // sessionMinutes/Seconds を削除
   
   const playAlarm = (): void => {
     if (audioRef.current) {
@@ -168,17 +163,26 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   };
 
   const toggleTimer = (): void => {
+    if (!isRunning) {
+      // タイマー開始時
+      setMinutes(0);
+      setSeconds(0);
+      setCycles(0); // cycles をリセット
+      randomOffsetMinutesRef.current = 0; // 12時からスタート
+      randomOffsetSecondsRef.current = 0;
+    }
     setIsRunning(!isRunning);
   };
-
-  const resetCycles = (): void => {
-    setCycles(0);
-    lastCycleTimeRef.current = 0;
-  };
   
-  const resetClock = (): void => {
+  const resetClock = (): void => { // 「針を12に戻す」
     setMinutes(0);
     setSeconds(0);
+    setCycles(0); // cycles をリセット
+    randomOffsetMinutesRef.current = 0;
+    randomOffsetSecondsRef.current = 0;
+    if (isRunning) {
+      setIsRunning(false); // タイマーも停止
+    }
   };
 
   const toggleSettings = (): void => {
@@ -220,7 +224,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         <div className="mb-4 text-center">
           <p className="text-gray-600 text-sm">経過時間</p>
           <p className="text-4xl font-bold font-mono text-gray-800">
-            {String(Math.floor(minutes)).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </p>
         </div>
       )}
@@ -236,17 +240,13 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         </button>
         
         {showCycles && (
-          <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4 flex justify-between items-center">
+          <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4 text-center">
             <div>
               <p className="text-gray-600">完了した周回数:</p>
-              <p className="text-2xl font-bold">{cycles} 周 ({formatTime(cycles * 12)})</p>
+              <p className="text-2xl font-bold">
+                {cycles} 周 ({formatTime(cycles * 12)})
+              </p>
             </div>
-            <button
-              onClick={resetCycles}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
-            >
-              リセット
-            </button>
           </div>
         )}
         
@@ -256,6 +256,27 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
             className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
           >
             針を12に戻す
+          </button>
+        </div>
+
+        <div className="flex justify-between w-full mb-4">
+          <button
+            onClick={() => {
+              // 実際の経過時間をリセット
+              setMinutes(0);
+              setSeconds(0);
+              setCycles(0); // cycles をリセット
+              // 針の初期位置をランダムに設定
+              randomOffsetMinutesRef.current = Math.floor(Math.random() * 12); // 0-11
+              randomOffsetSecondsRef.current = Math.floor(Math.random() * 60); // 0-59
+              
+              if (!isRunning) {
+                setIsRunning(true); // タイマーが止まっていれば開始
+              }
+            }}
+            className="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
+          >
+            ランダムに開始する
           </button>
         </div>
         
@@ -289,7 +310,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
             <div className="mb-4">
               <label className="flex items-center justify-between">
                 <span className="text-gray-700">周回数を表示:</span>
-                <div 
+                <div
                   onClick={() => setShowCycles(!showCycles)}
                   className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
                     showCycles ? 'bg-green-500' : 'bg-gray-300'
