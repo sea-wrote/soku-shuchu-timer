@@ -19,8 +19,9 @@
   }
 }
 
-body {
-  background: var(--background);
+html, body {
+  min-height: 100vh; /* 画面全体の高さを確保 */
+  background: #f0f9ff; /* bg-sky-50 に対応する色 */
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

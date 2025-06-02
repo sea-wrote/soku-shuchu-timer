@@ -145,19 +145,33 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    const width = canvas.width;
-    const height = canvas.height;
-    const radius = Math.min(width, height) / 2 * 0.9;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-    
+
+    // デバイスピクセル比を取得
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = 300; // CSSで指定する表示幅
+    const displayHeight = 300; // CSSで指定する表示高さ
+
+    // canvasの実際の描画サイズを高解像度に設定
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+
+    // CSSで表示サイズを指定
+    canvas.style.width = `${displayWidth}px`;
+    canvas.style.height = `${displayHeight}px`;
+
+    // 描画コンテキストをスケーリング
+    ctx.scale(dpr, dpr);
+
+    const radius = Math.min(displayWidth, displayHeight) / 2 * 0.9;
+    const centerX = displayWidth / 2;
+    const centerY = displayHeight / 2;
+
+    // Clear canvas (スケーリング後のサイズでクリア)
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
+
     // Draw clock face
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
@@ -275,10 +289,11 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
       
       <div className="relative mb-4">
         <canvas 
-          ref={canvasRef} 
-          width={300} 
-          height={300} 
+          ref={canvasRef}
+          // widthとheight属性はuseEffect内で動的に設定するため削除
           className="border-4 border-gray-300 rounded-full shadow-lg"
+          // style属性もuseEffect内で設定するため、ここでは不要であれば削除
+          // style={{ width: '300px', height: '300px' }} // 必要であれば残す
         />
         
         {alarmPlaying && (
