@@ -13,7 +13,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
   const [cycles, setCycles] = useState<number>(0);
-  const [showCycles, setShowCycles] = useState<boolean>(true); // 「周回数を表示」のトグル
+  const [showCycles, setShowCycles] = useState<boolean>(false); // 「周回数を表示」のトグル
   const [timerInterval, setTimerInterval] = useState<number>(12);
   const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
   const [showElapsedTime, setShowElapsedTime] = useState<boolean>(true);
