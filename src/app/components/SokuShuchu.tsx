@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Bell } from 'lucide-react';
 
 // インターフェースを定義
@@ -24,6 +25,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const randomOffsetMinutesRef = useRef<number>(0);
   const randomOffsetSecondsRef = useRef<number>(0);
+  const appInBackgroundTimeRef = useRef<number | null>(null);
 
   // Initialize audio for alarm
   useEffect(() => {
@@ -64,6 +66,80 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
       if (interval) clearInterval(interval);
     };
   }, [isRunning, timerEnabled, timerInterval, minutes]); // minutes を依存配列に追加（cycles更新のため）
+
+  const playAlarm = useCallback((): void => {
+    if (audioRef.current) {
+      setAlarmPlaying(true);
+      audioRef.current.play();
+
+      audioRef.current.onended = () => {
+        setAlarmPlaying(false);
+      };
+    }
+  }, [audioRef, setAlarmPlaying]);
+
+  // App state change listener for background/foreground handling
+  useEffect(() => {
+    let listenerHandle: import('@capacitor/core').PluginListenerHandle | null = null;
+
+    const setupListener = async () => {
+      listenerHandle = await CapacitorApp.addListener('appStateChange', (state: { isActive: boolean }) => {
+        if (!state.isActive) {
+          // App is going to background
+          if (isRunning) {
+            appInBackgroundTimeRef.current = Date.now();
+            // Optionally, you might want to clear the interval here if isRunning is managed by this state
+            // For now, we assume the main interval continues or is paused by OS
+          }
+        } else {
+          // App is coming to foreground
+          if (appInBackgroundTimeRef.current && isRunning) {
+            const timeInBackground = Date.now() - appInBackgroundTimeRef.current;
+            const secondsInBackground = Math.floor(timeInBackground / 1000);
+            appInBackgroundTimeRef.current = null;
+
+            // Adjust timer based on time spent in background
+            setSeconds(prevSeconds => {
+              const newTotalSeconds = minutes * 60 + prevSeconds + secondsInBackground;
+              const newMinutes = Math.floor(newTotalSeconds / 60);
+              const newRemainingSeconds = newTotalSeconds % 60;
+
+              setMinutes(newMinutes);
+              // Potentially re-calculate cycles and trigger alarm if needed based on newMinutes
+              // This part needs careful integration with existing cycle and alarm logic
+              if (timerEnabled) {
+                // Check if alarm should have sounded while in background
+                const oldTotalMinutes = minutes; // Before adding background time
+                const currentTotalMinutes = newMinutes;
+                for (let m = oldTotalMinutes + 1; m <= currentTotalMinutes; m++) {
+                  if (m % timerInterval === 0) {
+                    playAlarm(); // Now playAlarm is defined before this useEffect
+                    break; // Play alarm once if multiple intervals passed
+                  }
+                }
+              }
+              // Update cycles based on the new total minutes
+              // This logic assumes cycles increment per minute. Adjust if different.
+              const minutesPassed = newMinutes - minutes; // minutes here is the value before setMinutes(newMinutes)
+              if (minutesPassed > 0) {
+                   setCycles(prevCycles => prevCycles + minutesPassed);
+              }
+
+              return newRemainingSeconds;
+            });
+          }
+        }
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
+    };
+  }, [isRunning, timerEnabled, timerInterval, playAlarm]); // Removed minutes from dependency array
 
   // Clock drawing
   useEffect(() => {
@@ -144,17 +220,6 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     ctx.fill();
   }, [seconds, minutes, timerEnabled, timerInterval]); // sessionMinutes/Seconds を削除
   
-  const playAlarm = (): void => {
-    if (audioRef.current) {
-      setAlarmPlaying(true);
-      audioRef.current.play();
-      
-      audioRef.current.onended = () => {
-        setAlarmPlaying(false);
-      };
-    }
-  };
-
   const stopAlarm = (): void => {
     if (audioRef.current) {
       audioRef.current.pause();
