@@ -29,7 +29,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
 
   // Initialize audio for alarm
   useEffect(() => {
-    audioRef.current = new Audio("data:audio/wav;base64,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");
+    audioRef.current = new Audio("/zen-bell.wav");
   }, []);
 
   // Main timer logic
@@ -283,8 +283,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-sky-50 p-4">
       <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-gray-800">即集中時計</h1>
-        <p className="text-gray-600">集中のための12分計</p>
+        <h1 className="text-3xl font-bold text-gray-800">Sauna12timer</h1>
       </div>
       
       <div className="relative mb-4">
@@ -447,7 +446,6 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
             )}
             
             <div className="text-xs text-gray-500 mt-4">
-              <p>※ アプリを閉じると計測は停止します</p>
               <p>※ タイマーは設定した分数が経過すると音が鳴ります</p>
             </div>
           </div>
