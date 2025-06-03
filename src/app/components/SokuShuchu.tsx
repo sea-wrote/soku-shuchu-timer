@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { Bell } from 'lucide-react';
+import { Bell, Play, Square, RotateCcw, Settings, Shuffle } from 'lucide-react';
+
 
 // インターフェースを定義
 type SokuShuchuProps = object
@@ -142,6 +143,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   }, [isRunning, timerEnabled, timerInterval, playAlarm]); // Removed minutes from dependency array
 
   // Clock drawing
+// Enhanced Clock drawing with modern design
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -149,90 +151,129 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // デバイスピクセル比を取得
     const dpr = window.devicePixelRatio || 1;
-    const displayWidth = 300; // CSSで指定する表示幅
-    const displayHeight = 300; // CSSで指定する表示高さ
+    const displayWidth = 300; // 少し小さくしてスタイリッシュに
+    const displayHeight = 300;
 
-    // canvasの実際の描画サイズを高解像度に設定
     canvas.width = displayWidth * dpr;
     canvas.height = displayHeight * dpr;
-
-    // CSSで表示サイズを指定
     canvas.style.width = `${displayWidth}px`;
     canvas.style.height = `${displayHeight}px`;
-
-    // 描画コンテキストをスケーリング
     ctx.scale(dpr, dpr);
 
-    const radius = Math.min(displayWidth, displayHeight) / 2 * 0.9;
+    const radius = Math.min(displayWidth, displayHeight) / 2 * 0.9; // 枠を細くするため少し大きく
     const centerX = displayWidth / 2;
     const centerY = displayHeight / 2;
 
-    // Clear canvas (スケーリング後のサイズでクリア)
     ctx.clearRect(0, 0, displayWidth, displayHeight);
 
-    // Draw clock face
+    // Draw clock face (シンプルに)
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = '#f0f9ff';
+    ctx.fillStyle = '#f8fafc'; // 明るいグレー（ほぼ白）
     ctx.fill();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#000';
+
+    // Draw clock border (細くシャープに)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 2; // 細い線
+    ctx.strokeStyle = '#e2e8f0'; // 薄いグレー
     ctx.stroke();
     
     // Draw hour marks
-    ctx.font = radius * 0.15 + 'px arial';
+    for (let i = 0; i < 12; i++) {
+      const angle = (i * Math.PI / 6) - (Math.PI / 2);
+      const isMainHour = i % 3 === 0;
+      const markLength = isMainHour ? radius * 0.1 : radius * 0.05;
+      const markWidth = isMainHour ? 2.5 : 1.5;
+      
+      ctx.beginPath();
+      ctx.lineWidth = markWidth;
+      ctx.strokeStyle = '#475569'; // 濃いグレー
+      ctx.moveTo(
+        centerX + (radius - markLength) * Math.cos(angle),
+        centerY + (radius - markLength) * Math.sin(angle)
+      );
+      ctx.lineTo(
+        centerX + radius * Math.cos(angle),
+        centerY + radius * Math.sin(angle)
+      );
+      ctx.stroke();
+    }
+
+    // Draw minute marks
+    for (let i = 0; i < 60; i++) {
+      if (i % 5 !== 0) { // Avoid drawing over hour marks
+        const angle = (i * Math.PI / 30) - (Math.PI / 2);
+        const markLength = radius * 0.03;
+        
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#94a3b8'; // やや薄いグレー
+        ctx.moveTo(
+          centerX + (radius - markLength) * Math.cos(angle),
+          centerY + (radius - markLength) * Math.sin(angle)
+        );
+        ctx.lineTo(
+          centerX + radius * Math.cos(angle),
+          centerY + radius * Math.sin(angle)
+        );
+        ctx.stroke();
+      }
+    }
+
+    // Draw numbers
+    ctx.font = `normal ${radius * 0.15}px system-ui, -apple-system, sans-serif`; // "bold" を削除、少し小さく
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#1e293b'; // 濃いグレー（ほぼ黒）
     
     for (let num = 1; num <= 12; num++) {
       const angle = (num * Math.PI / 6) - (Math.PI / 2);
-      const x = centerX + radius * 0.85 * Math.cos(angle);
-      const y = centerY + radius * 0.85 * Math.sin(angle);
-      ctx.fillStyle = '#000';
+      // 数字の位置をマークの内側に調整
+      const x = centerX + radius * 0.78 * Math.cos(angle);
+      const y = centerY + radius * 0.78 * Math.sin(angle);
       ctx.fillText(num.toString(), x, y);
     }
     
-    // Calculate display time including offset
     const currentDisplaySeconds = (randomOffsetSecondsRef.current + seconds) % 60;
     const carryOverMinutes = Math.floor((randomOffsetSecondsRef.current + seconds) / 60);
     const currentDisplayMinutes = (randomOffsetMinutesRef.current + minutes + carryOverMinutes) % 60;
 
-    // Calculate angle for minutes and seconds based on display time
-    const minuteAngle = ((currentDisplayMinutes % 12) * 30 + currentDisplaySeconds / 2) * Math.PI / 180;
-    const secondAngle = (currentDisplaySeconds * 6) * Math.PI / 180;
-    
-    // Draw minute hand
+    const minuteAngle = ((currentDisplayMinutes % 60) * 6 + currentDisplaySeconds / 10) * Math.PI / 180 - Math.PI / 2; // 角度の計算を修正、時針はなし
+    const secondAngle = (currentDisplaySeconds * 6) * Math.PI / 180 - Math.PI / 2;
+
+    // Draw minute hand (シャープに)
     ctx.beginPath();
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4; // 少し細く
     ctx.lineCap = 'round';
-    ctx.strokeStyle = 'blue'; // 分針の色を青に変更
+    ctx.strokeStyle = '#1e40af'; // 青系 (現状維持)
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.6 * Math.sin(minuteAngle), // 分針の長さを変更
-      centerY - radius * 0.6 * Math.cos(minuteAngle)  // 分針の長さを変更
+      centerX + radius * 0.65 * Math.cos(minuteAngle), // 長さを調整
+      centerY + radius * 0.65 * Math.sin(minuteAngle)
     );
     ctx.stroke();
     
-    // Draw second hand (simplified, without the water drop at the tip)
+    // Draw second hand (シャープに)
     ctx.beginPath();
-    ctx.lineWidth = 5; // 秒針の太さを分針に合わせる
+    ctx.lineWidth = 2; // 細く
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#e11d48';
+    ctx.strokeStyle = '#dc2626'; // 赤系 (現状維持)
     ctx.moveTo(centerX, centerY);
     ctx.lineTo(
-      centerX + radius * 0.8 * Math.sin(secondAngle), // 秒針の長さを変更
-      centerY - radius * 0.8 * Math.cos(secondAngle)  // 秒針の長さを変更
+      centerX + radius * 0.8 * Math.cos(secondAngle), // 長さを調整
+      centerY + radius * 0.8 * Math.sin(secondAngle)
     );
     ctx.stroke();
     
-    // Draw center dot
+    // Draw center dot (シンプルに)
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
-    ctx.fillStyle = '#000';
+    ctx.arc(centerX, centerY, radius * 0.05, 0, 2 * Math.PI); // サイズ調整
+    ctx.fillStyle = '#1e293b'; // 針と同じ濃いグレー
     ctx.fill();
-  }, [seconds, minutes, timerEnabled, timerInterval]); // sessionMinutes/Seconds を削除
+
+  }, [seconds, minutes, timerEnabled, timerInterval]);
   
   const stopAlarm = (): void => {
     if (audioRef.current) {
@@ -281,178 +322,188 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-sky-50 p-4">
-      <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-gray-800">Sauna12timer</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      {/* Enhanced Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl text-blue-600 mb-2">
+          Sauna12timer
+        </h1>
+        <div className="w-16 h-1 bg-blue-500 rounded-full mx-auto"></div>
       </div>
       
-      <div className="relative mb-4">
-        <canvas 
-          ref={canvasRef}
-          // widthとheight属性はuseEffect内で動的に設定するため削除
-          className="border-4 border-gray-300 rounded-full shadow-lg"
-          // style属性もuseEffect内で設定するため、ここでは不要であれば削除
-          // style={{ width: '300px', height: '300px' }} // 必要であれば残す
-        />
-        
-        {alarmPlaying && (
-          <button 
-            onClick={stopAlarm}
-            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full shadow-md flex items-center justify-center"
-          >
-            <Bell size={20} />
-          </button>
-        )}
+      {/* Enhanced Clock Container */}
+      <div className="relative mb-8 p-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-blue-50/80 rounded-full blur-xl"></div>
+        <div className="relative bg-white/90 backdrop-blur-sm rounded-full p-6 shadow-2xl border border-white/50">
+          <canvas 
+            ref={canvasRef}
+            className="drop-shadow-lg"
+          />
+          
+          {alarmPlaying && (
+            <button 
+              onClick={stopAlarm}
+              className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform duration-200 animate-pulse"
+            >
+              <Bell size={24} className="animate-bounce" />
+            </button>
+          )}
+        </div>
       </div>
       
+      {/* Enhanced Time Display */}
       {showElapsedTime && (
-        <div className="mb-4 text-center">
-          <p className="text-gray-600 text-sm">経過時間</p>
-          <p className="text-4xl font-bold font-mono text-gray-800">
+        <div className="mb-8 text-center bg-white/80 backdrop-blur-sm rounded-2xl px-8 py-4 shadow-lg border border-white/50">
+          <p className="text-slate-600 text-sm font-medium mb-1">経過時間</p>
+          <p className="text-5xl font-normal font-mono text-slate-800">
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </p>
         </div>
       )}
       
-      <div className="flex flex-col items-center mt-4 w-full max-w-xs">
-        {isRunning ? (
-          <button
-            onClick={toggleTimer}
-            className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 bg-red-500 hover:bg-red-600`}
-          >
-            一時停止
-          </button>
-        ) : hasStarted ? (
-          <button
-            onClick={toggleTimer} // isRunningがfalseでhasStartedがtrueなら「再開」
-            className={`w-full py-3 px-6 rounded-lg text-white font-bold shadow-md mb-4 bg-blue-500 hover:bg-blue-600`}
-          >
-            再開
-          </button>
-        ) : (
-          <div className="flex w-full space-x-2 mb-4">
-            <button
-              onClick={handleStart}
-              className={`flex-1 py-3 px-4 rounded-lg text-white font-bold shadow-md bg-green-500 hover:bg-green-600`}
-            >
-              スタート
-            </button>
-            <button
-              onClick={handleRandomStart}
-              className="flex-1 py-3 px-4 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold shadow-md"
-            >
-              ランダム
-            </button>
-          </div>
-        )}
-        
-        {showCycles && (
-          <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4 text-center">
-            <div>
-              <p className="text-gray-600">完了した周回数:</p>
-              <p className="text-2xl font-bold">
-                {cycles} 周目
-              </p>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex justify-between w-full mb-4">
-          <button
-            onClick={resetClock}
-            className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg shadow-md w-full"
-          >
-            リセット
-          </button>
+      {/* Enhanced Controls */}
+      <div className="flex flex-col items-center mt-4 w-full max-w-sm space-y-4">
+        {/* Main Control Buttons */}
+        <div className="grid grid-cols-2 gap-4 w-full">
+          {!hasStarted ? (
+            <>
+              <button
+                onClick={handleStart}
+                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold shadow-lg bg-emerald-500 hover:bg-emerald-600 transform hover:scale-105 transition-all duration-200"
+              >
+                <Play size={20} />
+                スタート
+              </button>
+              <button
+                onClick={handleRandomStart}
+                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold shadow-lg bg-purple-500 hover:bg-purple-600 transform hover:scale-105 transition-all duration-200"
+              >
+                <Shuffle size={20} />
+                ランダム
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={toggleTimer}
+                className={`flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold shadow-lg transform hover:scale-105 transition-all duration-200 ${
+                  isRunning
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {isRunning ? <Square size={20} /> : <Play size={20} />}
+                {isRunning ? '一時停止' : '再開'}
+              </button>
+              <button
+                onClick={resetClock}
+                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold shadow-lg bg-slate-500 hover:bg-slate-600 transform hover:scale-105 transition-all duration-200"
+              >
+                <RotateCcw size={20} />
+                リセット
+              </button>
+            </>
+          )}
         </div>
         
+        {/* Cycles Display */}
+        {showCycles && (
+          <div className="bg-blue-50 rounded-2xl shadow-lg p-6 w-full text-center border border-blue-100">
+            <p className="text-slate-600 font-medium mb-1">完了した周回数</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {cycles} 周目
+            </p>
+          </div>
+        )}
+        
+        {/* Settings Button */}
         <button
           onClick={toggleSettings}
-          className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded-lg shadow-md"
+          className="flex items-center justify-center gap-2 w-full py-3 px-6 rounded-2xl text-slate-700 font-medium shadow-lg bg-white/80 backdrop-blur-sm hover:bg-white/90 border border-white/50 transform hover:scale-105 transition-all duration-200"
         >
+          <Settings size={20} />
           {showSettings ? '設定を閉じる' : '設定を開く'}
         </button>
         
+        {/* Enhanced Settings Panel */}
         {showSettings && (
-          <div className="bg-white rounded-lg shadow-md p-4 w-full mt-4">
-            <div className="mb-4">
-              <label className="flex items-center justify-between">
-                <span className="text-gray-700">経過時間を表示:</span>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 w-full border border-white/50 space-y-6">
+            {/* Toggle Settings */}
+            {[
+              { label: '経過時間を表示', state: showElapsedTime, setter: setShowElapsedTime },
+              { label: '周回数を表示', state: showCycles, setter: setShowCycles },
+              { label: 'タイマーを有効化', state: timerEnabled, setter: setTimerEnabled }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <span className="text-slate-700 font-medium">{item.label}</span>
                 <div 
-                  onClick={() => setShowElapsedTime(!showElapsedTime)}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
-                    showElapsedTime ? 'bg-green-500' : 'bg-gray-300'
+                  onClick={() => item.setter(!item.state)}
+                  className={`relative inline-block w-14 h-7 transition-colors duration-300 ease-in-out rounded-full cursor-pointer ${
+                    item.state ? 'bg-blue-500' : 'bg-slate-300'
                   }`}
                 >
                   <span
-                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
-                      showElapsedTime ? 'translate-x-6' : 'translate-x-0'
+                    className={`absolute left-1 top-1 bg-white w-5 h-5 transition-transform duration-300 ease-in-out rounded-full shadow-md transform ${
+                      item.state ? 'translate-x-7' : 'translate-x-0'
                     }`}
                   />
                 </div>
-              </label>
-            </div>
+              </div>
+            ))}
             
-            <div className="mb-4">
-              <label className="flex items-center justify-between">
-                <span className="text-gray-700">周回数を表示:</span>
-                <div
-                  onClick={() => setShowCycles(!showCycles)}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
-                    showCycles ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
-                      showCycles ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-            
-            <div className="mb-4">
-              <label className="flex items-center justify-between">
-                <span className="text-gray-700">タイマーを有効化:</span>
-                <div 
-                  onClick={() => setTimerEnabled(!timerEnabled)}
-                  className={`relative inline-block w-12 h-6 transition-colors duration-200 ease-in-out rounded-full cursor-pointer ${
-                    timerEnabled ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`absolute left-1 top-1 bg-white w-4 h-4 transition-transform duration-200 ease-in-out rounded-full transform ${
-                      timerEnabled ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-            
+            {/* Timer Interval Slider */}
             {timerEnabled && (
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">
+              <div className="space-y-3">
+                <label className="block text-slate-700 font-medium">
                   タイマー間隔: {timerInterval} 分
                 </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="60"
-                  value={timerInterval}
-                  onChange={(e) => setTimerInterval(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
+                <div className="relative">
+                  <input
+                    type="range"
+                    min="1"
+                    max="60"
+                    value={timerInterval}
+                    onChange={(e) => setTimerInterval(parseInt(e.target.value))}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(timerInterval / 60) * 100}%, #cbd5e1 ${(timerInterval / 60) * 100}%, #cbd5e1 100%)`
+                    }}
+                  />
+                </div>
               </div>
             )}
             
-            <div className="text-xs text-gray-500 mt-4">
+            <div className="text-xs text-slate-500 mt-4 p-3 bg-slate-50 rounded-lg">
               <p>※ タイマーは設定した分数が経過すると音が鳴ります</p>
             </div>
           </div>
         )}
       </div>
+      
+      <style jsx>{`
+        .slider-thumb::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          border: 2px solid white;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+          cursor: pointer;
+        }
+        
+        .slider-thumb::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          border: 2px solid white;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+          cursor: pointer;
+        }
+      `}</style>
     </div>
   );
-};
+}
 
 export default SokuShuchu;
