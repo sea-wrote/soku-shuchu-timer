@@ -240,7 +240,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
     const carryOverMinutes = Math.floor((randomOffsetSecondsRef.current + seconds) / 60);
     const currentDisplayMinutes = (randomOffsetMinutesRef.current + minutes + carryOverMinutes) % 60;
 
-    const minuteAngle = ((currentDisplayMinutes % 60) * 6 + currentDisplaySeconds / 10) * Math.PI / 180 - Math.PI / 2; // 角度の計算を修正、時針はなし
+    const minuteAngle = ((currentDisplayMinutes % 12) * 30 + currentDisplaySeconds * 0.5) * Math.PI / 180 - Math.PI / 2; // 12分計になるように角度計算を修正
     const secondAngle = (currentDisplaySeconds * 6) * Math.PI / 180 - Math.PI / 2;
 
     // Draw minute hand (シャープに)
