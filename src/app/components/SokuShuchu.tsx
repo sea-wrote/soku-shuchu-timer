@@ -322,9 +322,9 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+    <div className={`flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4 ${showSettings ? 'min-h-screen overflow-y-auto overflow-x-hidden' : 'h-screen overflow-y-hidden overflow-x-hidden'}`}>
       {/* Enhanced Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 pt-12">
         <h1 className="text-4xl text-blue-600 mb-2">
           Sauna12timer
         </h1>
@@ -362,7 +362,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
       )}
       
       {/* Enhanced Controls */}
-      <div className="flex flex-col items-center mt-4 w-full max-w-sm space-y-4">
+      <div className="flex flex-col items-center mt-4 w-full max-w-sm space-y-4 px-4">
         {/* Main Control Buttons */}
         <div className="grid grid-cols-2 gap-4 w-full">
           {!hasStarted ? (
