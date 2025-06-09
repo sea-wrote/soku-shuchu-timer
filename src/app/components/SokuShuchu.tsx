@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Preferences } from '@capacitor/preferences';
 import { Bell, Play, Square, RotateCcw, Settings, Shuffle } from 'lucide-react';
 
 
@@ -18,7 +19,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   const [showCycles, setShowCycles] = useState<boolean>(false); // 「周回数を表示」のトグル
   const [timerInterval, setTimerInterval] = useState<number>(12);
   const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
-  const [showElapsedTime, setShowElapsedTime] = useState<boolean>(true);
+  const [showElapsedTime, setShowElapsedTime] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [alarmPlaying, setAlarmPlaying] = useState<boolean>(false);
 
@@ -32,6 +33,41 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
   useEffect(() => {
     audioRef.current = new Audio("/zen-bell.wav");
   }, []);
+
+  // Load settings from Preferences on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      const { value: showCyclesValue } = await Preferences.get({ key: 'showCycles' });
+      if (showCyclesValue !== null) setShowCycles(JSON.parse(showCyclesValue));
+
+      const { value: timerIntervalValue } = await Preferences.get({ key: 'timerInterval' });
+      if (timerIntervalValue !== null) setTimerInterval(JSON.parse(timerIntervalValue));
+
+      const { value: timerEnabledValue } = await Preferences.get({ key: 'timerEnabled' });
+      if (timerEnabledValue !== null) setTimerEnabled(JSON.parse(timerEnabledValue));
+
+      const { value: showElapsedTimeValue } = await Preferences.get({ key: 'showElapsedTime' });
+      if (showElapsedTimeValue !== null) setShowElapsedTime(JSON.parse(showElapsedTimeValue));
+    };
+    loadSettings();
+  }, []);
+
+  // Save settings to Preferences when they change
+  useEffect(() => {
+    Preferences.set({ key: 'showCycles', value: JSON.stringify(showCycles) });
+  }, [showCycles]);
+
+  useEffect(() => {
+    Preferences.set({ key: 'timerInterval', value: JSON.stringify(timerInterval) });
+  }, [timerInterval]);
+
+  useEffect(() => {
+    Preferences.set({ key: 'timerEnabled', value: JSON.stringify(timerEnabled) });
+  }, [timerEnabled]);
+
+  useEffect(() => {
+    Preferences.set({ key: 'showElapsedTime', value: JSON.stringify(showElapsedTime) });
+  }, [showElapsedTime]);
 
   // Main timer logic
   useEffect(() => {
