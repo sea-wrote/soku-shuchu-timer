@@ -81,8 +81,8 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
           if (newActualSeconds === 60) {
             setMinutes((prevActualMinutes: number) => {
               const newActualMinutes = prevActualMinutes + 1;
-              // 周回数カウント (1分ごとにカウントアップ)
-              if (newActualMinutes !== 0) { // 最初の0分時はカウントしない
+              // 周回数カウント (12分ごとにカウントアップ)
+              if (newActualMinutes !== 0 && newActualMinutes % 12 === 0) {
                 setCycles((prevCycles: number) => prevCycles + 1);
               }
               // アラームロジック: timerInterval に基づいて鳴らす
@@ -156,10 +156,16 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
                 }
               }
               // Update cycles based on the new total minutes
-              // This logic assumes cycles increment per minute. Adjust if different.
-              const minutesPassed = newMinutes - minutes; // minutes here is the value before setMinutes(newMinutes)
-              if (minutesPassed > 0) {
-                   setCycles(prevCycles => prevCycles + minutesPassed);
+              const oldTotalMinutes = minutes; // Before adding background time
+              const currentTotalMinutes = newMinutes;
+              let cyclesToAdd = 0;
+              for (let m = oldTotalMinutes + 1; m <= currentTotalMinutes; m++) {
+                if (m !== 0 && m % 12 === 0) {
+                  cyclesToAdd++;
+                }
+              }
+              if (cyclesToAdd > 0) {
+                setCycles(prevCycles => prevCycles + cyclesToAdd);
               }
 
               return newRemainingSeconds;
@@ -445,9 +451,9 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         {/* Cycles Display */}
         {showCycles && (
           <div className="bg-blue-50 rounded-2xl shadow-lg p-6 w-full text-center border border-blue-100">
-            <p className="text-slate-600 font-medium mb-1">完了した周回数</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {cycles} 周目
+            <p className="text-slate-600 font-medium mb-1">12分セット</p>
+            <p className="text-3xl font-bold font-mono text-blue-600">
+              {cycles}
             </p>
           </div>
         )}
@@ -467,7 +473,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
             {/* Toggle Settings */}
             {[
               { label: '経過時間を表示', state: showElapsedTime, setter: setShowElapsedTime },
-              { label: '周回数を表示', state: showCycles, setter: setShowCycles },
+              { label: '12分セットを表示', state: showCycles, setter: setShowCycles },
               { label: 'タイマーを有効化', state: timerEnabled, setter: setTimerEnabled }
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between">
