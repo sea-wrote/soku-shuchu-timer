@@ -140,7 +140,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         listenerHandle.remove();
       }
     };
-  }, [isRunning, timerEnabled, timerInterval, playAlarm]); // Removed minutes from dependency array
+  }, [isRunning, timerEnabled, timerInterval, playAlarm, minutes, seconds]);
 
   // Clock drawing
 // Enhanced Clock drawing with modern design
