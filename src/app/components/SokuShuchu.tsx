@@ -451,9 +451,9 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
         {/* Cycles Display */}
         {showCycles && (
           <div className="bg-blue-50 rounded-2xl shadow-lg p-6 w-full text-center border border-blue-100">
-            <p className="text-slate-600 font-medium mb-1">完了した周回数</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {cycles} 周目
+            <p className="text-slate-600 font-medium mb-1">12分セット</p>
+            <p className="text-3xl font-bold font-mono text-blue-600">
+              {cycles}
             </p>
           </div>
         )}
@@ -473,7 +473,7 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
             {/* Toggle Settings */}
             {[
               { label: '経過時間を表示', state: showElapsedTime, setter: setShowElapsedTime },
-              { label: '周回数を表示', state: showCycles, setter: setShowCycles },
+              { label: '12分セットを表示', state: showCycles, setter: setShowCycles },
               { label: 'タイマーを有効化', state: timerEnabled, setter: setTimerEnabled }
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between">
