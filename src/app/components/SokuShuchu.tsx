@@ -81,8 +81,8 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
           if (newActualSeconds === 60) {
             setMinutes((prevActualMinutes: number) => {
               const newActualMinutes = prevActualMinutes + 1;
-              // 周回数カウント (1分ごとにカウントアップ)
-              if (newActualMinutes !== 0) { // 最初の0分時はカウントしない
+              // 周回数カウント (12分ごとにカウントアップ)
+              if (newActualMinutes !== 0 && newActualMinutes % 12 === 0) {
                 setCycles((prevCycles: number) => prevCycles + 1);
               }
               // アラームロジック: timerInterval に基づいて鳴らす
@@ -156,10 +156,16 @@ const SokuShuchu: React.FC<SokuShuchuProps> = () => {
                 }
               }
               // Update cycles based on the new total minutes
-              // This logic assumes cycles increment per minute. Adjust if different.
-              const minutesPassed = newMinutes - minutes; // minutes here is the value before setMinutes(newMinutes)
-              if (minutesPassed > 0) {
-                   setCycles(prevCycles => prevCycles + minutesPassed);
+              const oldTotalMinutes = minutes; // Before adding background time
+              const currentTotalMinutes = newMinutes;
+              let cyclesToAdd = 0;
+              for (let m = oldTotalMinutes + 1; m <= currentTotalMinutes; m++) {
+                if (m !== 0 && m % 12 === 0) {
+                  cyclesToAdd++;
+                }
+              }
+              if (cyclesToAdd > 0) {
+                setCycles(prevCycles => prevCycles + cyclesToAdd);
               }
 
               return newRemainingSeconds;
